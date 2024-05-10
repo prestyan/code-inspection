@@ -9,11 +9,12 @@ from sklearn.metrics import f1_score, confusion_matrix
 import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
+
 nsys_executable = "C:/Program Files/NVIDIA Corporation/Nsight Systems 2023.2.3/target-windows-x64/nsys.exe"
 LEARNING_RATE = 0.0005
 EPOCHS = 1
 BATCH_SIZE = 16
-data_path = 'E:/data/emotion2/Preprocessed_EEG/Sub_S1_single/Sub_S1_1.mat'
+data_path = 'E:/data/EEG/Sub_S1_single/Sub_S1_1.mat'
 eeg_data_name = 'S1Data'
 labels_name = 'S1Label'
 num_classes = 3
@@ -49,18 +50,18 @@ class DeepCNN(nn.Module):
         self.num_classes = num_classes
 
         # Conv Pool Block-1
-        self.conv11 = nn.Conv2d(1, 25, (1, 10), padding=0)
+        self.conv11 = nn.Conv2d(1, 25, (1, 3), padding=0)
         self.conv12 = nn.Conv2d(25, 25, (62, 1), padding=0)  # [bs,25,61,491]->[bs,25,1,491] and next->[bs,1,25,491]
         self.bn1 = nn.BatchNorm2d(25, False)
-        self.pooling1 = nn.AvgPool2d((1, 3), stride=(1, 3))
+        self.pooling1 = nn.AvgPool2d((1, 2), stride=(1, 2))
 
         # Conv Pool Block-2
-        self.conv2 = nn.Conv2d(25, 50, (1, 10), padding=0)  # [bs,1,25,163]->[bs,50,1,154] and next->[bs,1,50,154]
+        self.conv2 = nn.Conv2d(25, 50, (1, 3), padding=0)  # [bs,1,25,163]->[bs,50,1,154] and next->[bs,1,50,154]
         self.bn2 = nn.BatchNorm2d(50)
         self.pooling2 = nn.AvgPool2d((1, 3), stride=(1, 3))
 
         # Conv Pool Block-3
-        self.conv3 = nn.Conv2d(50, 100, (1, 10), padding=0)  # [bs,1,50,51]->[bs,100,1,42] and next->[bs,1,100,42]
+        self.conv3 = nn.Conv2d(50, 100, (1, 3), padding=0)  # [bs,1,50,51]->[bs,100,1,42] and next->[bs,1,100,42]
         self.bn3 = nn.BatchNorm2d(100)
         self.pooling3 = nn.AvgPool2d((1, 3), stride=(1, 2))
 
@@ -70,10 +71,11 @@ class DeepCNN(nn.Module):
         self.pooling4 = nn.AvgPool2d((1, 2), stride=(1, 2))
 
         # Linear classification
-        self.fc1 = nn.Linear(600, self.num_classes)
+        self.fc1 = nn.Linear(800, self.num_classes)
 
         self.relu = nn.ReLU()
-        self.dp = nn.Dropout(p=0.25)
+        self.dp = nn.Dropout(p=0.3)
+
     def forward(self, x):
         # Layer 1
         x = self.pooling1(self.relu(self.bn1(self.conv12(self.conv11(x)))))
@@ -199,7 +201,15 @@ def train_and_val(train_loader, test_loader, train_label, test_label):
     conf_matrix(bestpred.cpu(), bestlabel)
 
 
+def conti_train(nsub):
+    for i in range(1, nsub + 1):
+        global data_path
+        data_path = 'E:/data/EEG/Sub_S1_single/Sub_S1_' + str(nsub) + '.mat'
+        train_loader, test_loader, train_label, test_label = load_data()
+        train_and_val(train_loader, test_loader, train_label, test_label)
+
+import sys
 # Main function
 if __name__ == "__main__":
-    train_loader, test_loader, train_label, test_label = load_data()
-    train_and_val(train_loader, test_loader, train_label, test_label)
+    nsub = sys.argv[1]
+    conti_train(nsub)

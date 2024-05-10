@@ -208,7 +208,8 @@ def conti_train(nsub):
         train_loader, test_loader, train_label, test_label = load_data()
         train_and_val(train_loader, test_loader, train_label, test_label)
 
-
+import sys
 # Main function
 if __name__ == "__main__":
-    conti_train(16)
+    nsub = sys.argv[1]
+    conti_train(nsub)
